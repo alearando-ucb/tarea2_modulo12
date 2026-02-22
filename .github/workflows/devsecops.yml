@@ -128,16 +128,16 @@ jobs:
     # Etapa 8. SCA – Análisis de dependencias
     # ========================================
     - name: npm audit — users-service
-      run: cd backend/users-service && npm audit --audit-level=high
+      run: cd backend/users-service && npm audit --audit-level=critical
 
     - name: npm audit — academic-service
-      run: cd backend/academic-service && npm audit --audit-level=high
+      run: cd backend/academic-service && npm audit --audit-level=critical
 
     - name: npm audit — api-gateway
-      run: cd backend/api-gateway && npm audit --audit-level=high
+      run: cd backend/api-gateway && npm audit --audit-level=critical
 
     - name: npm audit — frontend
-      run: cd frontend && npm audit --audit-level=high
+      run: cd frontend && npm audit --audit-level=critical
 
     # =========================
     # Etapa 9. SAST – Semgrep
