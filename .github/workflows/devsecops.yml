@@ -1,4 +1,11 @@
 name: DevSecOps CI/CD Pipeline
+
+
+# ====================================================================================
+#  TRIGGERS
+#  - El pipeline devsecops ejecuta en push a main (rama de producción)
+#  - El pipeline devsecops  ejecuta en pull requests (para validar antes de mergear)
+# ====================================================================================
 on:
   push:
     branches: [ "main" ]
@@ -8,92 +15,56 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     # =========================
-    # 1. Checkout
+    # Etapa 1. Checkout
     # =========================
     - name: Checkout repository
       uses: actions/checkout@v4
 
     # =========================
-    # 2. Setup Node
+    # Etapada 2. Setup Node
     # =========================
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 20
+        # Se activa el caché de dependencias npm
+        cache: 'npm'
+        # Se restaura el cache si este no ha cambiado
+        cache-dependency-path: '**/package-lock.json'
 
-    # =========================
-    # 5.5 Create .env files (CI)
-    # =========================
-    - name: Create env files for Docker Compose
+    # ===================================================
+    # Etapa 3. Preparación de las variables de entonrno
+    # Create .env files (CI)
+    # ===================================================
+
+    - name: Crear archivos .env para Docker Compose
       run: |
-        # Backend services
+        # Backend: users-service
         cp backend/users-service/.env.example backend/users-service/.env
-        cp backend/academic-service/.env.example backend/academic-service/.env
-        cp backend/api-gateway/.env.example backend/api-gateway/.env
-
-        echo "DB_HOST=${{ secrets.USERS_DB_HOST }}" >> backend/users-service/.env
-        echo "DB_USER=${{ secrets.USERS_DB_USER }}" >> backend/users-service/.env
+        echo "DB_HOST=${{ secrets.USERS_DB_HOST }}"         >> backend/users-service/.env
+        echo "DB_USER=${{ secrets.USERS_DB_USER }}"         >> backend/users-service/.env
         echo "DB_PASSWORD=${{ secrets.USERS_DB_PASSWORD }}" >> backend/users-service/.env
 
-        echo "DB_HOST=${{ secrets.ACADEMIC_DB_HOST }}" >> backend/academic-service/.env
-        echo "DB_USER=${{ secrets.ACADEMIC_DB_USER }}" >> backend/academic-service/.env
+        # Backend: academic-service
+        cp backend/academic-service/.env.example backend/academic-service/.env
+        echo "DB_HOST=${{ secrets.ACADEMIC_DB_HOST }}"         >> backend/academic-service/.env
+        echo "DB_USER=${{ secrets.ACADEMIC_DB_USER }}"         >> backend/academic-service/.env
         echo "DB_PASSWORD=${{ secrets.ACADEMIC_DB_PASSWORD }}" >> backend/academic-service/.env
 
-        echo "USERS_SERVICE_URL=http://users-service:3001" >> backend/api-gateway/.env
+        # Backend: api-gateway
+        cp backend/api-gateway/.env.example backend/api-gateway/.env
+        echo "USERS_SERVICE_URL=http://users-service:3001"     >> backend/api-gateway/.env
         echo "ACADEMIC_SERVICE_URL=http://academic-service:3002" >> backend/api-gateway/.env
-        # Frontend (build/test time)
+
+        # Frontend
         cp frontend/.env.example frontend/.env
         echo "VITE_API_URL=http://api-gateway:3000" >> frontend/.env
-    # =========================
-    # 3. Install & Test Backend
-    # =========================
-    - name: Install & Test users-service
-      run: |
-        cd backend/users-service
-        npm ci
-        npm test
 
-    - name: Install & Test academic-service
-      run: |
-        cd backend/academic-service
-        npm ci
-        npm test
-
-    - name: Install & Test api-gateway
-      run: |
-        cd backend/api-gateway
-        npm ci
-        npm test
-
-    # =========================
-    # 4. Install & Test Frontend
-    # =========================
-    - name: Install & Test frontend
-      run: |
-        cd frontend
-        npm ci
-        npm test
-    # =========================
-    # 5. SAST – Semgrep
-    # =========================
-    - name: Install Semgrep
-      run: |
-        python3 -m pip install --upgrade pip
-        pip install semgrep
-    - name: SAST user-service
-      run: |
-        cd backend/users-service
-        semgrep --config=auto --severity=ERROR
-    - name: SAST academic-service
-      run: |
-        cd backend/academic-service
-        semgrep --config=auto --severity=ERROR
-    - name: SAST api-gateway
-      run: |
-        cd backend/api-gateway
-        semgrep --config=auto --severity=ERROR
-    
-    - name: Validate env files
+    # ============================================================================
+    # ETAPA 4 — VALIDACIÓN DE ARCHIVOS .ENV
+    # Verifica que los archivos .env se crearon correctamente en el paso anterior
+    # ============================================================================
+    - name: Validar archivos .env generados
       run: |
         ls -la backend/users-service
         ls -la backend/academic-service
@@ -101,51 +72,161 @@ jobs:
         ls -la frontend
 
     # =========================
-    # 6. Docker Build
+    # Etapa 5. Instalación reproducible
+    # =========================
+    - name: Instalar dependencias — users-service
+      run: cd backend/users-service && npm ci
+
+    - name: Instalar dependencias — academic-service
+      run: cd backend/academic-service && npm ci
+
+    - name: Instalar dependencias — api-gateway
+      run: cd backend/api-gateway && npm ci
+
+    - name: Instalar dependencias — frontend
+      run: cd frontend && npm ci
+
+    # ==============================================
+    # Etapa 6. Análisis de calidad de Código EsLint
+    # ==============================================
+    - name: ESLint — users-service
+      run: |
+        cd backend/users-service
+        npx eslint . --ext .js --max-warnings=0
+
+    - name: ESLint — academic-service
+      run: |
+        cd backend/academic-service
+        npx eslint . --ext .js --max-warnings=0
+
+    - name: ESLint — api-gateway
+      run: |
+        cd backend/api-gateway
+        npx eslint . --ext .js --max-warnings=0
+
+    - name: ESLint — frontend
+      run: |
+        cd frontend
+        npx eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0
+
+    # ============================
+    # Etapa 7. Testing automático
+    # ============================
+    - name: Tests — users-service
+      run: cd backend/users-service && npm test
+
+    - name: Tests — academic-service
+      run: cd backend/academic-service && npm test
+
+    - name: Tests — api-gateway
+      run: cd backend/api-gateway && npm test
+
+    - name: Tests — frontend
+      run: cd frontend && npm test
+
+    # ========================================
+    # Etapa 8. SCA – Análisis de dependencias
+    # ========================================
+    - name: npm audit — users-service
+      run: cd backend/users-service && npm audit --audit-level=high
+
+    - name: npm audit — academic-service
+      run: cd backend/academic-service && npm audit --audit-level=high
+
+    - name: npm audit — api-gateway
+      run: cd backend/api-gateway && npm audit --audit-level=high
+
+    - name: npm audit — frontend
+      run: cd frontend && npm audit --audit-level=high
+
+    # =========================
+    # Etapa 9. SAST – Semgrep
+    # =========================
+    - name: Instalar Semgrep
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install semgrep
+
+    # Se agregan las reglas personalizada de sengrep
+    - name: SAST Semgrep — users-service
+      run: cd backend/users-service && semgrep --config=backend/semgrep-rules --severity=ERROR
+
+    - name: SAST Semgrep — academic-service
+      run: cd backend/academic-service && semgrep --config=backend/semgrep-rules --severity=ERROR
+
+    - name: SAST Semgrep — api-gateway
+      run: cd backend/api-gateway && semgrep --config=backend/semgrep-rules --severity=ERROR
+
+    # NUEVO: el frontend también tiene lógica que puede ser vulnerable
+    - name: SAST Semgrep — frontend
+      run: cd frontend && semgrep --config=backend/semgrep-rules --severity=ERROR
+
+    # =========================
+    # Etapa 10. Build de docker
     # =========================
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker images
+    - name: Build Docker images (versionadas con SHA del commit)
       run: |
+        # El tag usa el SHA corto del commit para trazabilidad
+        export IMAGE_TAG=${{ github.sha }}
         docker compose -f backend/docker-compose.yml build
 
+        # Verificar que las imágenes se construyeron correctamente
+        docker images | grep -E "users-service|academic-service|api-gateway"
+
     # =========================
-    # 7. SCA – Trivy
+    # Etapa 11. SCA – Trivy
     # =========================
-    - name: Trivy scan users-service
+    - name: Trivy scan — users-service
       uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: users-service
-        severity: HIGH
-        exit-code: 1
+        severity: 'HIGH,CRITICAL'   # Ahora se agrega el nivel CRITICAL
+        exit-code: 1                # El pipeline falla si encuentra vuln.
 
-    - name: Trivy scan academic-service
+    - name: Trivy scan — academic-service
       uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: academic-service
-        severity: CRITICAL
+        severity: 'HIGH,CRITICAL'
         exit-code: 1
 
-    - name: Trivy scan api-gateway
+    - name: Trivy scan — api-gateway
       uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: api-gateway
-        severity: CRITICAL
+        severity: 'HIGH,CRITICAL'
         exit-code: 1
 
     # =========================
-    # 8. Smoke test
+    # Etapa 12. Smoke test
     # =========================
-    - name: Run docker-compose
+    - name: Levantar servicios con Docker Compose
       run: |
         docker compose -f backend/docker-compose.yml up -d
-        sleep 15
+        sleep 15   # Esperar a que los servicios inicialicen
 
-    - name: Smoke test API Gateway
+    - name: Smoke test — API Gateway /health
       run: |
-        curl http://localhost:3000/health
+        # --fail hace que curl retorne exit code != 0 en respuestas HTTP de error
+        curl --fail http://localhost:3000/health
 
-    - name: Shutdown services
+    # =========================
+    # Etapa 13. limpieza
+    # =========================
+    - name: Bajar servicios y limpiar recursos
       if: always()
-      run: docker compose -f backend/docker-compose.yml down || true
+      run: |
+        docker compose -f backend/docker-compose.yml down || true
+
+    # limpieza explícita de archivos con credenciales
+    - name: Eliminar archivos .env generados
+      if: always()
+      run: |
+        rm -f backend/users-service/.env
+        rm -f backend/academic-service/.env
+        rm -f backend/api-gateway/.env
+        rm -f frontend/.env
+        echo "Archivos .env eliminados del runner."
