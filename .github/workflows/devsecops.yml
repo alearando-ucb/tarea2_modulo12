@@ -171,7 +171,7 @@ jobs:
       run: |
         # El tag usa el SHA corto del commit para trazabilidad
         export IMAGE_TAG=${{ github.sha }}
-        docker compose -f backend/docker-compose.yml build
+        docker compose -f backend/docker-compose.yml build --no-cache
 
         # Verificar que las imágenes se construyeron correctamente
         docker images | grep -E "users-service|academic-service|api-gateway"
