@@ -23,6 +23,8 @@
     "tar": "^7.5.7"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.1",
     "nodemon": "^3.1.11"
   }
 }
