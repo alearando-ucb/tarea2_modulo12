@@ -12,7 +12,6 @@ module.exports = [
         console: "readonly",
         __dirname: "readonly",
         __filename: "readonly",
-        // Jest globals para los archivos de test
         test: "readonly",
         expect: "readonly",
         describe: "readonly",
@@ -24,7 +23,11 @@ module.exports = [
       }
     },
     rules: {
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "no-unused-vars": ["warn", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
       "no-console": "off"
     }
   }
