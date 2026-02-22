@@ -26,5 +26,8 @@
     "eslint": "^10.0.1",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11"
+  },
+  "overrides": {
+    "minimatch": "10.2.1"
   }
 }
