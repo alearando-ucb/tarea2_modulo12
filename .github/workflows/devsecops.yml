@@ -149,17 +149,17 @@ jobs:
 
     # Se agregan las reglas personalizada de sengrep
     - name: SAST Semgrep — users-service
-      run: cd backend/users-service && semgrep --config=backend/semgrep-rules --severity=ERROR
+      run: cd backend/users-service && semgrep --config=../semgrep-rules --severity=ERROR
 
     - name: SAST Semgrep — academic-service
-      run: cd backend/academic-service && semgrep --config=backend/semgrep-rules --severity=ERROR
+      run: cd backend/academic-service && semgrep --config=../semgrep-rules --severity=ERROR
 
     - name: SAST Semgrep — api-gateway
-      run: cd backend/api-gateway && semgrep --config=backend/semgrep-rules --severity=ERROR
+      run: cd backend/api-gateway && semgrep --config=../semgrep-rules --severity=ERROR
 
     # NUEVO: el frontend también tiene lógica que puede ser vulnerable
     - name: SAST Semgrep — frontend
-      run: cd frontend && semgrep --config=backend/semgrep-rules --severity=ERROR
+      run: cd frontend && semgrep --config=auto --severity=ERROR
 
     # =========================
     # Etapa 10. Build de docker
