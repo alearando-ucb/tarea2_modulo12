@@ -185,6 +185,7 @@ jobs:
         image-ref: users-service
         severity: 'HIGH,CRITICAL'   # Ahora se agrega el nivel CRITICAL
         exit-code: 1                # El pipeline falla si encuentra vuln.
+        vuln-type: 'os,library'
 
     - name: Trivy scan — academic-service
       uses: aquasecurity/trivy-action@0.20.0
@@ -192,6 +193,7 @@ jobs:
         image-ref: academic-service
         severity: 'HIGH,CRITICAL'
         exit-code: 1
+        vuln-type: 'os,library'
 
     - name: Trivy scan — api-gateway
       uses: aquasecurity/trivy-action@0.20.0
@@ -199,6 +201,7 @@ jobs:
         image-ref: api-gateway
         severity: 'HIGH,CRITICAL'
         exit-code: 1
+        vuln-type: 'os,library'
 
     # =========================
     # Etapa 12. Smoke test
