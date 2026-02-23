@@ -206,8 +206,6 @@ jobs:
         vuln-type: 'os,library'
         trivyignores: backend/api-gateway/.trivyignore
 
-    - name: Trivy scan.trivyignore
-
     # =========================
     # Etapa 12. Smoke test
     # =========================
