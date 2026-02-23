@@ -9,7 +9,7 @@ FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
 
-RUN npm ci --omit=dev 
+RUN npm ci --only=production && npm cache clean --force
 
 # Copiamos solo el código fuente
 COPY . . 
